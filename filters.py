@@ -10,15 +10,12 @@ rows_in_plot = 1
 columns_in_plot = 4
 standard_time = 1000
 standard_max = 1
-mean_window = 50
-median_window = 50
 data_types = ['step', 'impulse', 'ramp', 'sin']
 plt_titles = {'step': 'Step Function',
               'impulse': 'Impulse Function',
               'ramp': 'Ramp Function',
               'sin': 'Sine Function',
-              }
-              
+              }              
 sns.set(style="white", palette="bright")
 
 
@@ -34,6 +31,7 @@ class SimpleData:
         self.plot_location = 1
         self.mean_window = mean_window
         self.median_window = median_window
+        self.data_original = []
 
 ##        fig = pyplot.gcf()
 ##        fig.canvas.set_window_title('My title')
@@ -54,6 +52,7 @@ class SimpleData:
 
         for ftype,every in loop_through:
             every()
+            self.data_original = copy.deepcopy(self.data) #save actual signal
             if self.filtering >= 1:
                 self.add_noise()
             if self.filtering == 2:
@@ -68,18 +67,22 @@ class SimpleData:
     def step(self, x = standard_time, y = standard_max):
         data = [(i,0) if i < x else (i,y) for i in range(2*x)]
         self.data = np.array(data).astype(float)
+        return self.data
 
     def impulse(self, x = standard_time, y = standard_max):
         data = [(i,y) if i == x else (i,0) for i in range(2*x)]
         self.data = np.array(data).astype(float)
+        return self.data
 
     def ramp(self, x = standard_time, y = standard_max):
         data = [(i,i/(2*x)*y) for i in range(2*x)]
         self.data = np.array(data).astype(float)
+        return self.data
 
     def sin(self, x = standard_time, y = standard_max):
         data = [(i,np.sin(i/x*4)) for i in range(2*x)]
         self.data = np.array(data).astype(float)
+        return self.data
 
     def add_noise(self, mean = 0, dev = 0.1):
         dims = self.data.shape
@@ -101,10 +104,14 @@ class SimpleData:
         self.data = np.array(smoothed)
 
     def plot_data(self):
+        x_true = self.data_original[:,0]
+        y_true = self.data_original[:,1]
+        
         x = self.data[:,0]
         y = self.data[:,1]
         self.ax1 = self.plot1.add_subplot(rows_in_plot,columns_in_plot,self.plot_location)
         self.ax1.plot(x, y, 'b-')
+        self.ax1.plot(x_true, y_true, 'r-')
         plt.title(plt_titles[self.type])
         plt.xlabel('Time')
         plt.ylim([-1,1.2])
@@ -112,24 +119,33 @@ class SimpleData:
             plt.ylabel('Reading')
         self.plot_location += 1
         
+        plt.savefig(filter_types[self.filtering], dpi=None, facecolor='w', edgecolor='w',
+        orientation='portrait', papertype=None, format=None,
+        transparent=False, bbox_inches='tight', pad_inches=0.1,
+        frameon=None)
+        self.ax1.locator_params(nbins=3, axis='x')
 
 ##    def
     
     def show_plot(self):
         plt.show()
-        
 
-# Part 1: simple data
-simple = SimpleData(0)
+for power in range(3):
+    mean_window   = 5 * 10 **power
+    median_window = 5 * 10 **power       
+    filter_types = ['plain', 'noise', 'mean' + str(mean_window), 'median' + str(median_window)]
 
-# Part 2: Add Noise
-noise = SimpleData(1)
+    # Part 1: simple data
+    simple = SimpleData(0)
 
-# Part 3: Mean Temporal
-MT = SimpleData(2)
+    # Part 2: Add Noise
+    noise = SimpleData(1)
 
-#Part 4: Median Temporal
-MdT = SimpleData(3)
+    # Part 3: Mean Temporal
+    MT = SimpleData(2)
+
+    #Part 4: Median Temporal
+    MdT = SimpleData(3)
 
 
-plt.show()
+#plt.show()
